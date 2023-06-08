@@ -6,7 +6,6 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = enistatebuck
     key    = "aws/terraform.tfstate"
     region = "us-east-1"
   }
