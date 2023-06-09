@@ -3,7 +3,7 @@ data "github_repository" "repo" {
 }
 
 resource "aws_s3_bucket" "amibuild_codepipeline_bucket" {
-  region        = "ap-south-1"
+#  region        = "ap-south-1"
   bucket        = "amibuildartifactcodepipeline"
   force_destroy = true
 }
@@ -142,7 +142,7 @@ resource "github_repository_webhook" "github_webhook" {
 ### code build
 
 resource "aws_s3_bucket" "codebuild_log" {
-  region        = "ap-south-1"
+#  region        = "ap-south-1"
   bucket        = "amibuildcodebuildlog"
   force_destroy = true
 }
