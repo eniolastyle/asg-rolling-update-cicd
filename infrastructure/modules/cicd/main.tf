@@ -1,16 +1,17 @@
 data "github_repository" "repo" {
-    full_name = var.repository
+  full_name = var.repository
 }
 
 resource "aws_s3_bucket" "amibuild_codepipeline_bucket" {
-    bucket = "amibuildartifactcodepipeline"
-    force_destroy = true
+  region        = "ap-south-1"
+  bucket        = "amibuildartifactcodepipeline"
+  force_destroy = true
 }
 
 resource "aws_iam_role" "codepipeline_role" {
-    name = "amibuild_codepipeline_role"
+  name = "amibuild_codepipeline_role"
 
-    assume_role_policy = <<EOF
+  assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -26,11 +27,11 @@ resource "aws_iam_role" "codepipeline_role" {
 EOF
 }
 
-rosource "aws_iam_role_policy" "codepipeline_policy" {
-    name = "amibuild_codepipeline_policy"
-    role = aws_iam_role.codepipeline_role.id
+resource "aws_iam_role_policy" "codepipeline_policy" {
+  name = "amibuild_codepipeline_policy"
+  role = aws_iam_role.codepipeline_role.id
 
-    policy = <<EOF
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -61,94 +62,95 @@ EOF
 }
 
 resource "aws_codepipeline" "amibuild_codepipeline" {
-    name = "pack-pipeline"
-    role_arn = aws_iam_role.codepipline_role.arn
+  name     = "pack-pipeline"
+  role_arn = aws_iam_role.codepipeline_role.arn
 
-    artifact_store {
-        location = aws_s3_bucket.amibuild_codepipeline_bucket.bucket
-        type = "S3"
+  artifact_store {
+    location = aws_s3_bucket.amibuild_codepipeline_bucket.bucket
+    type     = "S3"
+  }
+
+  stage {
+    name = "Source"
+
+    action {
+      name             = "Source"
+      category         = "Source"
+      owner            = "ThirdParty"
+      provider         = "Github"
+      version          = "1"
+      output_artifacts = ["amibuild_artifcats"]
+
+      configuration = {
+        Owner      = var.github_owner
+        Repo       = data.github_repository.repo.name
+        Branch     = "main"
+        OAuthToken = var.github_Oauthtoken
+      }
     }
+  }
 
-    stage {
-        name = "Source"
+  stage {
+    name = "Build"
 
-        action {
-            name = "Source"
-            category = "Source"
-            owner = "ThirdParty"
-            provider = "Github"
-            version = "1"
-            output_artifacts = ["amibuild_artifcats"]
+    action {
+      name             = "Build"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["amibuild_artifacts"]
+      output_artifacts = ["amibuid_output"]
+      version          = "1"
 
-            configuration = {
-                Owner = var.github_owner
-                Repo = data.github_repository.repo.name
-                Branch = "main"
-                OAuthToken = var.github_Oauthtoken
-            }
-        }
+      configuration = {
+        ProjectName = aws_codebuild_project.amibuild_codebuild.name
+      }
     }
-
-    stage {
-        name = "Build"
-
-        action {
-            name = "Build"
-            category = "Build"
-            owner = "AWS"
-            provider = "CodeBuild"
-            input_artifacts = ["amibuild_artifacts"]
-            output_artifacts = ["amibuid_output"]
-            version = "1"
-
-            configuration = {
-                ProjectName = aws_codebuild_project.amibuild_codebuild.name
-            }
-        }
-    }
+  }
 }
 
 resource "aws_codepipeline_webhook" "amibuild_cp_wh" {
-    name = "amibuild_cp_webhook"
-    authentication = "GITHUB_HMAC"
-    target_action = "Source"
-    target_pipeline = aws_codepipline.amibuild_codepipeline.name
+  name            = "amibuild_cp_webhook"
+  authentication  = "GITHUB_HMAC"
+  target_action   = "Source"
+  target_pipeline = aws_codepipeline.amibuild_codepipeline.name
 
-    authentication_configuration {
-        secret_token = var.github_token
-    }
+  authentication_configuration {
+    secret_token = var.github_token
+  }
 
-    filter {
-        json_path = "$.ref"
-        match_equals = "refs/heads/{Branch}"
-    }
+  filter {
+    json_path    = "$.ref"
+    match_equals = "refs/heads/{Branch}"
+  }
 }
 
 # Wiring the codepipeline webhook into a github repo
-resource "github_repositoy_webhook" "github_webhook" {
-    repository = data.github_repository.repo.name
+resource "github_repository_webhook" "github_webhook" {
+  repository = data.github_repository.repo.name
 
-    configuration {
-        url = aws_codepipeline_webhook.amibuild_cp_wh.url
-        content_type = "json"
-        insecure_ssl = false
-        secret = var.github_token
-    }
+  configuration {
+    url          = aws_codepipeline_webhook.amibuild_cp_wh.url
+    content_type = "json"
+    insecure_ssl = false
+    secret       = var.github_token
+  }
 
-    events = ["push"]
+  events = ["push"]
 }
 
 ### code build
 
 resource "aws_s3_bucket" "codebuild_log" {
-    bucket = "amibuildcodebuildlog"
-    force_destroy = true
+  region        = "ap-south-1"
+  bucket        = "amibuildcodebuildlog"
+  force_destroy = true
 }
 
 resource "aws_iam_role" "codebuild_role" {
-    name = "amibuild_codebuild_log"
+  name = "amibuild_codebuild_log"
 
-    assume_role_policy = <<EOF
+  assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -165,9 +167,9 @@ EOF
 }
 
 resource "aws_iam_role_policy" "codebuile_policy" {
-    role = aws_iam_role.codebuild_role.name
+  role = aws_iam_role.codebuild_role.name
 
-    policy = <<POLICY
+  policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -200,78 +202,78 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "poweruser_access" {
-    role = aws_iam_role.codebuild_role.name
-    policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
 }
 
 resource "aws_codebuild_project" "amibuild_codebuild" {
-    name = "amibuild_codebuild"
-    description = "AMI Build Codebuild pipeline"
-    build_timeout = "15"
-    service_role = aws_iam_role.codebuild_role.arn
+  name          = "amibuild_codebuild"
+  description   = "AMI Build Codebuild pipeline"
+  build_timeout = "15"
+  service_role  = aws_iam_role.codebuild_role.arn
 
-    artifacts {
-        tyep = "CODEPIPELINE"
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  cache {
+    type     = "S3"
+    location = aws_s3_bucket.codebuild_log.bucket
+  }
+
+  environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:1.0"
+    type                        = "LINUX_CONTAINER"
+    image_pull_credentials_type = "CODEBUILD"
+
+    environment_variable {
+      name  = "AMIID_SSMPS"
+      value = var.ami_id_ssmps
     }
 
-    cache {
-        type = "S3"
-        location = aws_s3_bucket.codebuild_log.bucket
+    environment_variable {
+      name  = "SNS_ARN"
+      value = aws_sns_topic.amibuild_notification.arn
     }
 
-    environment {
-        compute_type = "BUILD_GENERAL1_SMALL"
-        image = "aws/codebuild/standard:1.0"
-        type = "LINUX_CONTAINER"
-        image_pull_credentials_type = "CODEBUILD"
+    environment_variable {
+      name  = "BASE_AMI"
+      value = var.base_ami_id
+    }
+  }
 
-        environment_variable {
-            name = "AMIID_SSMPS"
-            value = var.ami_id_ssmps
-        }
-
-        environment_variable {
-            name = "SNS_ARN"
-            value = aws_sns_topic.amibuild_notification.arn
-        }
-
-        environment_variable {
-            name = "BASE_AMI"
-            value = var.base_ami_id
-        }
+  logs_config {
+    cloudwatch_logs {
+      group_name  = "amibuild_log-group"
+      stream_name = "amibuild_log-stream"
     }
 
-    logs_config {
-        cloudwatch_logs {
-            group_name = "amibuild_log-group"
-            stream_name = "amibuild_log-stream"
-        }
-
-        s3_logs {
-            status = "ENABLED"
-            location = "${aws_s3_bucket.codebuild_log.id}/build-log"
-        }
+    s3_logs {
+      status   = "ENABLED"
+      location = "${aws_s3_bucket.codebuild_log.id}/build-log"
     }
+  }
 
-    source {
-        type = "CODEPIPELINE"
-        buildspec = "./infrastructure/temp/buildspec.yml"
-    }
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "./infrastructure/temp/buildspec.yml"
+  }
 
-    # source_version = "master"
+  # source_version = "master"
 }
 
 resource "aws_sns_topic" "amibuild_notification" {
-    name = "amibuild_notification"
+  name = "amibuild_notification"
 
-    provisioner "local-exec" {
-        command = "sh ${path.module}/scripts/sns_subscription.sh"
+  provisioner "local-exec" {
+    command = "sh ${path.module}/scripts/sns_subscription.sh"
 
-        environment = {
-            sns_arn = self.arn
-            sns_emails = var.emailids
-            region = var.region
-            aws_profile = var.aws_profile
-        }
+    environment = {
+      sns_arn     = self.arn
+      sns_emails  = var.emailids
+      region      = var.region
+      aws_profile = var.aws_profile
     }
+  }
 }

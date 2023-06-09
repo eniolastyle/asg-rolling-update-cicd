@@ -1,9 +1,9 @@
 #trigger from system manager parameter store from event bridge
 resource "aws_cloudwatch_event_rule" "ami_updated_rule" {
-    name = "webserver_ami_updated"
-    description = "Event when AMI is updated in Parameter store."
+  name        = "webserver_ami_updated"
+  description = "Event when AMI is updated in Parameter store."
 
-    event_pattern = <<EOF
+  event_pattern = <<EOF
 {
     "source": [
         "aws.ssm"
@@ -25,9 +25,9 @@ EOF
 
 #creating lambda function to kick start instance refresh
 resource "aws_iam_role" "asg_ir_lambda_role" {
-    name = "asg_instance_refresh_lambda_role"
+  name = "asg_instance_refresh_lambda_role"
 
-    assume_role_policy = <<EOF
+  assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -45,33 +45,33 @@ EOF
 }
 
 data "archive_file" "lambda_package" {
-    source_dir = "${path.module}/lambda"
-    output_path = "${path.module}/lambda_function_payload.zip"
-    type = "zip"
+  source_dir  = "${path.module}/lambda"
+  output_path = "${path.module}/lambda_function_payload.zip"
+  type        = "zip"
 }
 
 resource "aws_lambda_function" "asg_ir_lambda" {
-    filename = data.archive_file.lambda_package.output_path
-    source_code_hash = data.archive_file.lambda_package.output_base64sha256
-    function_name = "asg_instance_refresh_lambda"
-    role = aws_iam_role.asg_ir_lambda_role.arn
-    handler = "handler.lambda_handler"
-    runtime = "python3.8"
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
+  function_name    = "asg_instance_refresh_lambda"
+  role             = aws_iam_role.asg_ir_lambda_role.arn
+  handler          = "handler.lambda_handler"
+  runtime          = "python3.8"
 
-    environment {
-        variables = {
-            WebServerASGName = var.webservers_asg_name
-        }
+  environment {
+    variables = {
+      WebServerASGName = var.webservers_asg_name
     }
+  }
 }
 
 ### lambda policies
 resource "aws_iam_policy" "lambda_logging" {
-    name = "asg_ir_lambda_logging"
-    path = "/"
-    description = "IAM policy for logging from ASG lambda"
+  name        = "asg_ir_lambda_logging"
+  path        = "/"
+  description = "IAM policy for logging from ASG lambda"
 
-    policy = <<EOF
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -90,76 +90,76 @@ EOF
 }
 
 resource "aws_iam_policy" "lambda_ssm" {
-    name = "asg_ir_lambda_ssm"
-    path = "/"
-    description = "IAM policy for SSM Access from ASG lambda"
+  name        = "asg_ir_lambda_ssm"
+  path        = "/"
+  description = "IAM policy for SSM Access from ASG lambda"
 
-    policy = <<EOF
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
     {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "ssm:DescribeParameters"
-                ],
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "ssm:GetParameters"
-                ],
-                "Resource": "arn:aws:ssm:us-east-1:*:parameter${var.ami_id_ssmps}"
-            }
-        ]
-    }
-    EOF
+            "Effect": "Allow",
+            "Action": [
+                "ssm:DescribeParameters"
+            ],
+            "Resource": "*"
+        },
+     {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:GetParameters"
+            ],
+            "Resource": "arn:aws:ssm:us-east-1:*:parameter${var.ami_id_ssmps}"
+        }
+  ]
+}
+EOF
 }
 
 resource "aws_iam_policy" "lambda_ec2_access" {
-    name = "asg_ir_lambda_ec2_access"
-    path = "/"
-    description = "IAM policy for EC2 Access from ASG lambda"
+  name        = "asg_ir_lambda_ec2_access"
+  path        = "/"
+  description = "IAM policy for EC2 Access from ASG lambda"
 
-    policy = <<EOF
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
     {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "autoscaling:StartInstanceRefresh",
-                    "autoscaling:Describe*",
-                    "ec2:CreateLaunchTemplateVersion",
-                    "ec2:DescribeLaunchTemplates",
-                    "ec2:Describe*"
-                ],
-                "Resource": "*"
-            }
-        ]
-    }
-    EOF
+            "Effect": "Allow",
+            "Action": [
+                "autoscaling:StartInstanceRefresh",
+                "autoscaling:Describe*",
+                "ec2:CreateLaunchTemplateVersion",
+                "ec2:DescribeLaunchTemplates",
+                "ec2:Describe*"
+            ],
+            "Resource": "*"
+        }
+  ]
+}
+EOF
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
-    role = aws_iam_role.asg_ir_lambda_role.name
-    policy_arn = aws_iam_policy.lambda_logging.arn
+  role       = aws_iam_role.asg_ir_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_logging.arn
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_ssmps_read" {
-    role = aws_iam_role.asg_ir_lambda_role.name
-    policy_arn = aws_iam_policy.lambda_ssm.arn
+  role       = aws_iam_role.asg_ir_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_ssm.arn
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_ec2_access" {
-    role = aws_iam_role.asg_ir_lambda_role.name
-    policy_arn = aws_iam_policy.lambda_ec2_access.arn
+  role       = aws_iam_role.asg_ir_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_ec2_access.arn
 }
 
 #attaching lambda with event bridge.
 resource "aws_cloudwatch_event_target" "lambda_target" {
-    rule = aws_cloudwatch_event_rule.ami_updated_rule.name
-    target_id = "SentToLambda"
-    arn = aws_lambda_function.asg_ir_lambda.arn
+  rule      = aws_cloudwatch_event_rule.ami_updated_rule.name
+  target_id = "SentToLambda"
+  arn       = aws_lambda_function.asg_ir_lambda.arn
 }
