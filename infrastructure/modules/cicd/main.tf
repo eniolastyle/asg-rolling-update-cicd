@@ -3,8 +3,7 @@ data "github_repository" "repo" {
 }
 
 resource "aws_s3_bucket" "amibuild_codepipeline_bucket" {
-#  region        = "ap-south-1"
-  bucket        = "amibuildartifactcodepipeline"
+  bucket        = "eniolaamibuildartifactcodepipeline"
   force_destroy = true
 }
 
@@ -86,6 +85,7 @@ resource "aws_codepipeline" "amibuild_codepipeline" {
         Repo       = data.github_repository.repo.name
         Branch     = "main"
         OAuthToken = var.github_Oauthtoken
+        PollForSourceChanges = true
       }
     }
   }
@@ -142,8 +142,7 @@ resource "github_repository_webhook" "github_webhook" {
 ### code build
 
 resource "aws_s3_bucket" "codebuild_log" {
-#  region        = "ap-south-1"
-  bucket        = "amibuildcodebuildlog"
+  bucket        = "eniolaamibuildcodebuildlog"
   force_destroy = true
 }
 

@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~>4.0"
     }
+    github = {
+      source  = "integrations/github"
+      version = "5.26.0"
+    }
   }
   backend "s3" {
     key    = "aws/terraform.tfstate"
@@ -12,12 +16,12 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region  = var.region
   profile = var.aws_profile
 }
 
-provider "github" {
-  version = "2.4.0"
-  organization = "eniolastyle"
-  token = var.github_Oauthtoken
-}
+#provider "github" {
+#  version = "2.4.0"
+#  organization = "eniolastyle"
+#  token = var.github_Oauthtoken
+#}
