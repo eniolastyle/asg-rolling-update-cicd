@@ -16,7 +16,7 @@ variable "github_owner" {
 variable "github_host_arn" {
   type        = string
   description = "Repository Owner for GIT Hub Web Hook."
-  default     = "arn:aws:codestar-connections:us-east-1:761410730749:connection/fb7698a5-f7b2-4bce-9c50-424fbbdbb62e"
+  default     = "arn:aws:codestar-connections:us-east-1:761410730749:connection/6880542f-80f5-4dd6-809f-506690dee393"
 }
 
 variable "github_owner_account_id" {
