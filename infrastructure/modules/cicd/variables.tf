@@ -13,6 +13,18 @@ variable "github_owner" {
   description = "Repository Owner for GIT Hub Web Hook."
 }
 
+variable "github_host_arn" {
+  type = string
+  description = "Repository Owner for GIT Hub Web Hook."
+  default = "arn:aws:codestar-connections:us-east-1:761410730749:connection/fb7698a5-f7b2-4bce-9c50-424fbbdbb62e"
+}
+
+variable "github_owner_account_id" {
+  type = string
+  description = "Repository Owner for GIT Hub Web Hook."
+  default = "761410730749"
+}
+
 
 variable "ami_id_ssmps" {
   type = string

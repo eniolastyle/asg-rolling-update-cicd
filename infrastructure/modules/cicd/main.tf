@@ -1,7 +1,3 @@
-data "github_repository" "repo" {
-  full_name = var.repository
-}
-
 resource "aws_s3_bucket" "amibuild_codepipeline_bucket" {
   bucket        = "eniolaamibuildartifactcodepipeline"
   force_destroy = true
@@ -76,15 +72,14 @@ resource "aws_codepipeline" "amibuild_codepipeline" {
       name             = "Source"
       category         = "Source"
       owner            = "ThirdParty"
-      provider         = "Github"
+      provider         = "CodeStarConnection"
       version          = "1"
       output_artifacts = ["amibuild_artifcats"]
 
       configuration = {
-        Owner      = var.github_owner
-        Repo       = data.github_repository.repo.name
-        Branch     = "main"
-        OAuthToken = var.github_Oauthtoken
+        ConnectionArn        = aws_codestarconnections_connection.github_connection.arn
+        FullRepositoryId     = var.repository
+        BranchName           = "main"
         PollForSourceChanges = true
       }
     }
@@ -109,6 +104,23 @@ resource "aws_codepipeline" "amibuild_codepipeline" {
   }
 }
 
+resource "aws_codestarconnections_connection" "github_connection" {
+  provider_type    = "GitHub"
+  connection_name  = "amibuild_github_connection"
+  host_arn         = var.github_host_arn
+  owner_account_id = var.github_owner_account_id
+  provider_endpoint {
+    type   = "GitHub"
+    name   = "GitHub Connection"
+    config = {
+      Owner       = var.github_owner
+      Repository  = var.repository
+      Branch      = "main"
+      AccessToken = var.github_Oauthtoken
+    }
+  }
+}
+
 resource "aws_codepipeline_webhook" "amibuild_cp_wh" {
   name            = "amibuild_cp_webhook"
   authentication  = "GITHUB_HMAC"
@@ -116,7 +128,7 @@ resource "aws_codepipeline_webhook" "amibuild_cp_wh" {
   target_pipeline = aws_codepipeline.amibuild_codepipeline.name
 
   authentication_configuration {
-    secret_token = var.github_token
+    secret_token = var.github_Oauthtoken
   }
 
   filter {
@@ -126,18 +138,18 @@ resource "aws_codepipeline_webhook" "amibuild_cp_wh" {
 }
 
 # Wiring the codepipeline webhook into a github repo
-resource "github_repository_webhook" "github_webhook" {
-  repository = data.github_repository.repo.name
+#resource "github_repository_webhook" "github_webhook" {
+#  repository = data.github_repository.repo.name
 
-  configuration {
-    url          = aws_codepipeline_webhook.amibuild_cp_wh.url
-    content_type = "json"
-    insecure_ssl = false
-    secret       = var.github_token
-  }
+#  configuration {
+#    url          = aws_codepipeline_webhook.amibuild_cp_wh.url
+#    content_type = "json"
+#    insecure_ssl = false
+#    secret       = var.github_token
+#  }
 
-  events = ["push"]
-}
+#  events = ["push"]
+#}
 
 ### code build
 
