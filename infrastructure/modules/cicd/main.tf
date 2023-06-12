@@ -106,18 +106,11 @@ resource "aws_codepipeline" "amibuild_codepipeline" {
 
 resource "aws_codestarconnections_connection" "github_connection" {
   provider_type    = "GitHub"
-  connection_name  = "amibuild_github_connection"
+  name  = "amibuild_github_connection"
   host_arn         = var.github_host_arn
-  owner_account_id = var.github_owner_account_id
-  provider_endpoint {
-    type   = "GitHub"
-    name   = "GitHub Connection"
-    config = {
-      Owner       = var.github_owner
-      Repository  = var.repository
-      Branch      = "main"
-      AccessToken = var.github_Oauthtoken
-    }
+  
+  tags = {
+    Name = "GitHub Connection"
   }
 }
 
