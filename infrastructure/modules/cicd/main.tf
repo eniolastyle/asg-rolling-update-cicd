@@ -71,8 +71,8 @@ resource "aws_codepipeline" "amibuild_codepipeline" {
     action {
       name             = "Source"
       category         = "Source"
-      owner            = "ThirdParty"
-      provider         = "CodeStarConnection"
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
       version          = "1"
       output_artifacts = ["amibuild_artifcats"]
 
@@ -105,10 +105,10 @@ resource "aws_codepipeline" "amibuild_codepipeline" {
 }
 
 resource "aws_codestarconnections_connection" "github_connection" {
-  provider_type    = "GitHub"
-  name  = "amibuild_github_connection"
-  host_arn         = var.github_host_arn
-  
+  provider_type     = "GitHub"
+  name              = "amibuild_github_connection"
+#  host_arn          = var.github_host_arn
+#  connection_status = "PENDING"
   tags = {
     Name = "GitHub Connection"
   }

@@ -1,6 +1,10 @@
-data "aws_subnet_ids" "webserver_subnets" {
-  vpc_id = var.vpc_id
+data "aws_subnets" "subnets" {
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
 }
+
 
 #create ami param store with default value
 resource "aws_ssm_parameter" "webserver_ami_id_ssmps" {
@@ -61,7 +65,7 @@ resource "aws_launch_template" "webserver_lt" {
 
 resource "aws_autoscaling_group" "webserver_asg" {
   name = "webserver_asg"
-  vpc_zone_identifier = data.aws_subnet_ids.webserver_subnets.ids
+  vpc_zone_identifier = data.aws_subnets.subnets.ids
   desired_capacity   = 2
   max_size           = 4
   min_size           = 1
@@ -105,7 +109,7 @@ resource "aws_lb" "webserver_alb" {
   name               = "webserveralb"
   internal           = false
   load_balancer_type = "application"
-  subnets            = data.aws_subnet_ids.webserver_subnets.ids
+  subnets            = data.aws_subnets.subnets.ids
   security_groups    = [aws_security_group.allow_http_lb.id]
   tags = {
     Environment = "dev"
